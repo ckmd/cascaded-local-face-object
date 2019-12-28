@@ -1,5 +1,20 @@
 import cv2, dlib, sys
 from statistics import mean
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Output range is 0 to 1
+def add_padding(lo_obj,pad):
+    height = lo_obj.shape[0]
+    width = lo_obj.shape[1]
+    new_layer = np.zeros([height + 2*pad, width + 2*pad])
+    new_layer += 0.5
+    for i in range(height):
+        for j in range(width):
+            new_layer[i + pad][j + pad] = lo_obj[i][j]/255
+    # cv2.imshow("test", new_layer)
+    # cv2.waitKey(1)
+    return new_layer
 
 print(cv2.__version__)
 detector = dlib.get_frontal_face_detector()
@@ -52,18 +67,31 @@ while True:
                 # if(i!=16 and i!=26 and i!=35 and i!=41 and i!=47):
                     # cv2.line(frame, (x0,y0) ,(landmark.part(i+1).x,landmark.part(i+1).y), (0,255,255),1)
         # cv2.circle(frame, (x27,y27), 3, (0,255,255),1)
+        # draw rectangle in 5 local face object
         cv2.rectangle(frame, (min(left_eye_x)-9,min(left_eye_y)-9), (max(left_eye_x)+9,max(left_eye_y)+9), (0,255,255),1)
         cv2.rectangle(frame, (min(right_eye_x)-9,min(right_eye_y)-9), (max(right_eye_x)+9,max(right_eye_y)+9), (0,255,255),1)
         cv2.rectangle(frame, (min(nose_x)-9,min(nose_y)-9), (max(nose_x)+9,max(nose_y)+9), (0,255,255),1)
         cv2.rectangle(frame, (min(left_mouth_x)-9,min(left_mouth_y)-9), (max(left_mouth_x)+9,max(left_mouth_y)+9), (0,255,255),1)
         cv2.rectangle(frame, (min(right_mouth_x)-9,min(right_mouth_y)-9), (max(right_mouth_x)+9,max(right_mouth_y)+9), (0,255,255),1)
 
-    # Membuat bounding box dengan mean, hasilnya kurang bagus karena rasio x dan y berbeda
-    # mean_x, mean_y = int(mean(left_eye_x)),int(mean(left_eye_y))
-    # cv2.rectangle(frame, (mean_x-17,mean_y-17), (mean_x+17,mean_y+17), (255,0,0),1)
+        # Crop 5 local face object
+        left_eye = cv2.resize(grey[min(left_eye_y)-9:max(left_eye_y)+9,min(left_eye_x)-9:max(left_eye_x)+9],(50,25))
+        right_eye = cv2.resize(grey[min(right_eye_y)-9:max(right_eye_y)+9,min(right_eye_x)-9:max(right_eye_x)+9],(50,25))
+        nose = cv2.resize(grey[min(nose_y)-9:max(nose_y)+9,min(nose_x)-9:max(nose_x)+9],(65,40))
+        left_mouth = cv2.resize(grey[min(left_mouth_y)-9:max(left_mouth_y)+9,min(left_mouth_x)-9:max(left_mouth_x)+9],(18,18))
+        right_mouth = cv2.resize(grey[min(right_mouth_y)-9:max(right_mouth_y)+9,min(right_mouth_x)-9:max(right_mouth_x)+9],(18,18))
 
-    cv2.imshow("jokowi", frame)
-    cv2.waitKey(1)
-    key = cv2.waitKey(1)
-    if(key == 27):
-        break
+        # Membuat bounding box dengan mean, hasilnya kurang bagus karena rasio x dan y berbeda
+        # mean_x, mean_y = int(mean(left_eye_x)),int(mean(left_eye_y))
+        # cv2.rectangle(frame, (mean_x-17,mean_y-17), (mean_x+17,mean_y+17), (255,0,0),1)
+        #add padding in 5 local face object
+
+        cv2.imshow("le", add_padding(left_eye,4))
+        cv2.imshow("re", add_padding(right_eye,4))
+        cv2.imshow("no", add_padding(nose,4))
+        cv2.imshow("lm", add_padding(left_mouth,4))
+        cv2.imshow("rm", add_padding(right_mouth,4))
+        cv2.waitKey(1)
+        key = cv2.waitKey(1)
+        if(key == 27):
+            break
