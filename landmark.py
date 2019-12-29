@@ -1,6 +1,8 @@
 import cv2, dlib, sys
 from statistics import mean
 import numpy as np
+import Gabor as gbr
+import NumPyCNN as numpycnn
 import matplotlib.pyplot as plt
 
 # Output range is 0 to 1
@@ -16,7 +18,23 @@ def add_padding(lo_obj,pad):
     # cv2.waitKey(1)
     return new_layer
 
-print(cv2.__version__)
+def convolution(image,filter_real, filter_imajiner):
+    # Convolution
+    l1_feature_map = numpycnn.conv(image, filter_real)
+    l1_feature_map_i = numpycnn.conv(image, filter_imajiner)
+    # Pooling
+    l1_feature_map_pool = numpycnn.pooling(l1_feature_map, 2, 2)    
+    l1_feature_map_pool_i = numpycnn.pooling(l1_feature_map_i, 2, 2)    
+    # Create Magnitude
+    magnitude = np.sqrt((l1_feature_map_pool.T ** 2) + (l1_feature_map_pool_i.T ** 2))
+    magnitude = ( (magnitude - np.amin(magnitude) ) * 1 ) / ( np.amax(magnitude) - np.amin(magnitude) )
+    # Create Phase
+    # np.seterr(divide='ignore', invalid='ignore') # mengatasi runtime warning : invalid value encountered in true divide
+    phase = np.arctan(l1_feature_map_pool_i.T / l1_feature_map_pool.T)
+    phase = ( (phase - np.amin(phase) ) * 1 ) / ( np.amax(phase) - np.amin(phase) )
+    return magnitude,phase
+
+print("Welcome Gais, Pasang muka seganteng mungkin")
 detector = dlib.get_frontal_face_detector()
 predictor = dlib.shape_predictor("shape_predictor_68_face_landmarks.dat")
 jkw = cv2.imread('face.jpg')
@@ -81,16 +99,42 @@ while True:
         left_mouth = cv2.resize(grey[min(left_mouth_y)-9:max(left_mouth_y)+9,min(left_mouth_x)-9:max(left_mouth_x)+9],(18,18))
         right_mouth = cv2.resize(grey[min(right_mouth_y)-9:max(right_mouth_y)+9,min(right_mouth_x)-9:max(right_mouth_x)+9],(18,18))
 
-        # Membuat bounding box dengan mean, hasilnya kurang bagus karena rasio x dan y berbeda
-        # mean_x, mean_y = int(mean(left_eye_x)),int(mean(left_eye_y))
-        # cv2.rectangle(frame, (mean_x-17,mean_y-17), (mean_x+17,mean_y+17), (255,0,0),1)
-        #add padding in 5 local face object
+        # add padding, convolution, pooling, magnitude, phase in 5 local face object
+        fitur_left_eye = convolution(add_padding(left_eye,8),gbr.filter2,gbr.filter2_i)
+        fitur_right_eye = convolution(add_padding(right_eye,8),gbr.filter2,gbr.filter2_i)
+        fitur_nose = convolution(add_padding(nose,8),gbr.filter2,gbr.filter2_i)
+        fitur_left_mouth = convolution(add_padding(left_mouth,8),gbr.filter2,gbr.filter2_i)
+        fitur_right_mouth = convolution(add_padding(right_mouth,8),gbr.filter2,gbr.filter2_i)
 
-        cv2.imshow("le", add_padding(left_eye,4))
-        cv2.imshow("re", add_padding(right_eye,4))
-        cv2.imshow("no", add_padding(nose,4))
-        cv2.imshow("lm", add_padding(left_mouth,4))
-        cv2.imshow("rm", add_padding(right_mouth,4))
+        # Flatten Layer
+        input_eye = []
+        input_nose = []
+        input_mouth = []
+        for in1, conv1 in enumerate(fitur_left_eye[0]):
+            input_eye.append(conv1)
+        for in1, conv1 in enumerate(fitur_left_eye[1]):
+            input_eye.append(conv1)
+        for in1, conv1 in enumerate(fitur_right_eye[0]):
+            input_eye.append(conv1)
+        for in1, conv1 in enumerate(fitur_right_eye[1]):
+            input_eye.append(conv1)
+        for in1, conv1 in enumerate(fitur_nose[0]):
+            input_nose.append(conv1)
+        for in1, conv1 in enumerate(fitur_nose[1]):
+            input_nose.append(conv1)
+        for in1, conv1 in enumerate(fitur_left_mouth[0]):
+            input_mouth.append(conv1)
+        for in1, conv1 in enumerate(fitur_left_mouth[1]):
+            input_mouth.append(conv1)
+        for in1, conv1 in enumerate(fitur_right_mouth[0]):
+            input_mouth.append(conv1)
+        for in1, conv1 in enumerate(fitur_right_mouth[1]):
+            input_mouth.append(conv1)
+        input_eye = np.array(np.array(input_eye).ravel())
+        input_nose = np.array(np.array(input_nose).ravel())
+        input_mouth = np.array(np.array(input_mouth).ravel())
+        input_total = np.array([[*input_eye, *input_nose, *input_mouth]]) # sudah berupa array 2 dimensi
+
         cv2.waitKey(1)
         key = cv2.waitKey(1)
         if(key == 27):

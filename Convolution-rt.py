@@ -23,8 +23,8 @@ while True:
         y2 = face.bottom()
         crop = grey[y1:y2,x1:x2]
         grey = cv2.resize(crop,(100,100))
-        l1_feature_map = numpycnn.conv(grey/255, gbr.filter4)
-        l1_feature_map_i = numpycnn.conv(grey/255, gbr.filter4_i)
+        l1_feature_map = numpycnn.conv(grey/255, gbr.filter3)
+        l1_feature_map_i = numpycnn.conv(grey/255, gbr.filter3_i)
 
         magnitude = np.sqrt((l1_feature_map.T ** 2) + (l1_feature_map_i.T ** 2))
         magnitude = ( (magnitude - np.amin(magnitude) ) * 1 ) / ( np.amax(magnitude) - np.amin(magnitude) )
