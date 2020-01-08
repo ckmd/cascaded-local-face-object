@@ -19,11 +19,11 @@ def splitstring(word):
     return label
 
 # read several image
-img_dir = "15-people" # Enter Directory of all images 
+img_dir = "image-confusion" # Enter Directory of all images 
 data_path = os.path.join(img_dir,'*jpg')
 files = glob.glob(data_path)
 
-img_dir = "15-people" # Enter Directory of all images 
+img_dir = "image-confusion" # Enter Directory of all images 
 data_path = os.path.join(img_dir,'*png')
 files_png = glob.glob(data_path)
 

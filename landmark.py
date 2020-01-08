@@ -53,25 +53,29 @@ labels = read_data.label
 feature_set = data
 
 # Defining Neural Network Synapse
-np.random.seed(2)
+np.random.seed(15)
 weights = 2 * np.random.rand(5888,1000) - 1
 weights2 = 2 * np.random.rand(1000,15) - 1
 bias = 2 * np.random.rand(1,1000) - 1
 bias2 = 2 * np.random.rand(1,15) - 1
 lr = 0.05
-
+tempacc = []
 # Defining Neural Network Pickle
 weights = pickle.load(open("syn0.pickle", "rb"))
 weights2 = pickle.load(open("syn1.pickle", "rb"))
 bias = pickle.load(open("bias.pickle", "rb"))
 bias2 = pickle.load(open("bias2.pickle", "rb"))
+# acc = pickle.load(open("acc.pickle", "rb"))
+# tempacc = acc
 
-epoch = 2 * len(feature_set)
+epoch = 1 * len(feature_set)
 detected = 0
 accurate = 0
 
 for j in range(epoch):
+    startconv = time.time()
     ri = np.random.randint(len(feature_set))
+    ri = j
     frame = feature_set[ri]
 # while True:
 #     _,frame = cap.read()
@@ -168,6 +172,8 @@ for j in range(epoch):
         input_nose = np.array(np.array(input_nose).ravel())
         input_mouth = np.array(np.array(input_mouth).ravel())
         input_total = np.array([[*input_eye, *input_nose, *input_mouth]]) # sudah berupa array 2 dimensi
+        conv_time = time.time() - startconv
+        # print("conv time : ",conv_time," s")
 
         l1 = sigmoid(np.dot(input_total, weights) + bias)
         z = sigmoid(np.dot(l1, weights2) + bias2)
@@ -196,16 +202,20 @@ for j in range(epoch):
 
         for num in l1_delta:
             bias -= lr * num
+        current = time.time()
+        # print("conv + nn time : ",current - startconv, " s")
         if(np.argmax(labels[ri]) == np.argmax(z[0])):
             accurate += 1
             current = time.time()
             print(round((current - start),1),'s',round((j/epoch*100),2),'%', np.argmax(labels[ri]), labels[ri], z[0])
-            print("accurate : ", accurate / detected * 100, "%")
-        cv2.waitKey(1)
-        current = time.time()
+            # calculating softmax
+            exps = [np.exp(lol) for lol in (z[0]*10)]
+            sum_of_exps = sum(exps)
+            softmax = [so/sum_of_exps for so in exps]
+            print(np.round(softmax,2))
+            print("accurate  : ", accurate / detected * 100, "%")
+            # tempacc.append(accurate / detected * 100)
         cv2.imshow("frame",frame)
-        print(input_total.shape)
-        print(current - start)
         key = cv2.waitKey(1)
         if(key == 27):
             break
@@ -219,6 +229,8 @@ pickle_out = open("bias.pickle", "wb")
 pickle.dump(bias, pickle_out)
 pickle_out = open("bias2.pickle", "wb")
 pickle.dump(bias2, pickle_out)
+# pickle_out = open("acc.pickle", "wb")
+# pickle.dump(tempacc, pickle_out)
 pickle_out.close()
 
 end = time.time()
